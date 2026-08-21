@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Calendar</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="calendar-container">
+        <!-- Calendar Side -->
+        <div class="calendar-section">
+            <div class="calendar-header">
+                <h2 id="current-month">August 2026</h2>
+                <div class="nav-buttons">
+                    <button id="prev-month" class="nav-btn" aria-label="Previous month">
+                        <svg viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd"/>
+                        </svg>
+                    </button>
+                    <button id="next-month" class="nav-btn" aria-label="Next month">
+                        <svg viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="calendar-grid">
+                <div class="day-header">S</div>
+                <div class="day-header">M</div>
+                <div class="day-header">T</div>
+                <div class="day-header">W</div>
+                <div class="day-header">T</div>
+                <div class="day-header">F</div>
+                <div class="day-header">S</div>
+                <div id="calendar-days"></div>
+            </div>
+
+            <div class="powered-by">
+                <a href="#" target="_blank" aria-label="Powered by">
+                    <span>⚡</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Events Side -->
+        <div class="events-section">
+            <div class="events-header">
+                <h2 id="selected-date">Select a date</h2>
+            </div>
+            <div id="events-list" class="events-list">
+                <p class="no-events">Select a date to view events</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
