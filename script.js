@@ -151,14 +151,27 @@ function selectDate(dateStr) {
       day: "numeric",
     });
 
+  console.log('=== DATE FILTERING DEBUG ===');
+  console.log('Selected dateStr:', dateStr);
+  console.log('First 3 events:', events.slice(0, 3).map(e => ({
+    title: e.title,
+    date: e.date,
+    endDate: e.endDate
+  })));
+
   // Filter events for this date
   const dayEvents = events.filter((event) => {
-    const eventStart = new Date(event.date);
-    const eventEnd = event.endDate ? new Date(event.endDate) : eventStart;
-    return date >= eventStart && date <= eventEnd;
+    // Simple string comparison for dates in YYYY-MM-DD format
+    const isMatch = event.date === dateStr || 
+                    (event.endDate && dateStr >= event.date && dateStr <= event.endDate);
+    
+    if (isMatch) {
+      console.log('MATCHED:', event.title, event.date);
+    }
+    
+    return isMatch;
   });
 
-  console.log('Selected date:', dateStr);
   console.log('Day events found:', dayEvents);
   console.log('Total events:', events.length);
 
