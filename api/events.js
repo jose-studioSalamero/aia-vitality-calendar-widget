@@ -18,7 +18,7 @@ export default async function handler(req, res) {
     // Fetch all data from the sheet
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: spreadsheetId,
-      range: 'Untitled!A2:N1000', // Start from row 2 to skip headers, adjust range as needed
+      range: 'Untitled!A2:N1000',
     });
 
     const rows = response.data.values || [];
@@ -31,24 +31,25 @@ export default async function handler(req, res) {
         return title !== 'Hong Kong Observation Wheel';
       })
       .map(row => {
-        const startDateTime = new Date(row[5]);
+        // Parse dates in Hong Kong timezone
+        const startDateTime = new Date(row[5]); // Already in ISO format from sheets
         const endDateTime = new Date(row[6]);
+        
+        // Format time for Hong Kong timezone
+        const timeOptions = { 
+          hour: 'numeric', 
+          minute: '2-digit',
+          hour12: true,
+          timeZone: 'Asia/Hong_Kong'
+        };
         
         return {
           id: row[0], // event_id
           title: row[2], // title
-          date: startDateTime.toISOString().split('T')[0],
-          endDate: endDateTime.toISOString().split('T')[0],
-          startTime: startDateTime.toLocaleTimeString('en-US', { 
-            hour: 'numeric', 
-            minute: '2-digit',
-            hour12: true 
-          }),
-          endTime: endDateTime.toLocaleTimeString('en-US', { 
-            hour: 'numeric', 
-            minute: '2-digit',
-            hour12: true 
-          }),
+          date: row[5]?.split('T')[0], // Use the date part directly from the sheet
+          endDate: row[6]?.split('T')[0],
+          startTime: startDateTime.toLocaleTimeString('en-US', timeOptions),
+          endTime: endDateTime.toLocaleTimeString('en-US', timeOptions),
           description: row[9] || '', // summary
           imageUrl: row[10] || '', // image_url
           ticketUrl: row[11] || '', // eventbrite_url
@@ -70,4 +71,3 @@ export default async function handler(req, res) {
     res.status(500).json({ error: 'Failed to fetch events' });
   }
 }
-
