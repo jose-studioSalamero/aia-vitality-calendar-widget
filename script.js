@@ -158,6 +158,10 @@ function selectDate(dateStr) {
     return date >= eventStart && date <= eventEnd;
   });
 
+  console.log('Selected date:', dateStr);
+  console.log('Day events found:', dayEvents);
+  console.log('Total events:', events.length);
+
   // Render events
   renderEvents(dayEvents);
 }
