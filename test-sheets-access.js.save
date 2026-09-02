@@ -1,0 +1,49 @@
+const { google } = require('googleapis');
+hkow-507404-2959ece70f44.jconst path = require('path');
+
+async function testSheetAccess() {
+  try {
+    // Path to your downloaded JSON key file
+    const keyFile = path.join(__dirname, 'your-key-filename.json');
+    
+    // Authenticate with service account
+    const auth = new google.auth.GoogleAuth({
+      keyFile: keyFile,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
+    });
+
+    const sheets = google.sheets({ version: 'v4', auth });
+    
+    // The Sheet ID from Aidan's email
+    const spreadsheetId = '1fymh7kY8cme4rYP3Tb7g1YzzxnJI2pc9o9dXHTPCGfU';
+
+    // Try to read the sheet
+    const response = await sheets.spreadsheets.get({
+      spreadsheetId: spreadsheetId,
+    });
+
+    console.log('✅ Access successful!');
+    console.log('Sheet title:', response.data.properties.title);
+    console.log('Sheet tabs:', response.data.sheets.map(s => s.properties.title));
+
+    // Read some actual data
+    const dataResponse = await sheets.spreadsheets.values.get({
+      spreadsheetId: spreadsheetId,
+      range: 'Sheet1!A1:Z10',
+    });
+
+    console.log('\nFirst few rows:');
+    console.log(dataResponse.data.values);
+
+  } catch (error) {
+    console.error('❌ Access failed:');
+    console.error(error.message);
+    
+    if (error.code === 403) {
+      console.log('\nThe service account does not have access to this sheet.');
+      console.log('Make sure Aidan shared it with: external-integrator@hkow-507404.iam.gserviceaccount.com');
+    }
+  }
+}
+
+testSheetAccess();
