@@ -1,0 +1,8 @@
+{
+  "name": "aia-vitality-calendar-widget",
+  "version": "1.0.0",
+  "description": "AIA Vitality Hub calendar widget with Google Sheets integration",
+  "dependencies": {
+    "googleapis": "^128.0.0"
+  }
+}
