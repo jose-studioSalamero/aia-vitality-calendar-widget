@@ -143,6 +143,17 @@ function selectDate(dateStr) {
   selectedDate = dateStr;
   const date = new Date(dateStr + "T00:00:00");
 
+  // Remove previous selection
+  document.querySelectorAll('.calendar-day.selected').forEach(el => {
+    el.classList.remove('selected');
+  });
+
+  // Add selected class to clicked date
+  const clickedDay = document.querySelector(`[data-date="${dateStr}"]`);
+  if (clickedDay) {
+    clickedDay.classList.add('selected');
+  }
+
   // Update header
   document.getElementById("selected-date").textContent =
     date.toLocaleDateString("en-US", {
@@ -178,7 +189,6 @@ function selectDate(dateStr) {
   // Render events
   renderEvents(dayEvents);
 }
-
 // Render events list
 function renderEvents(dayEvents) {
   const eventsContainer = document.getElementById("events-list");

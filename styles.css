@@ -258,3 +258,28 @@ body {
         border-bottom: 1px solid #e5e7eb;
     }
 }
+
+/* Add this for selected date styling */
+.calendar-day.selected {
+  background-color: #b8325d; /* Darker shade */
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(231, 0, 66, 0.4);
+}
+
+/* Update the event buttons container to center align */
+.event-buttons {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.free-badge {
+  background-color: #4caf50;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+}
