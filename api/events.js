@@ -23,6 +23,7 @@ export default async function handler(req, res) {
     // Helper function to extract Eventbrite ID from URL
     function extractEventbriteId(url) {
       if (!url) return null;
+      // Match patterns like: eventbrite.com/e/event-name-123456789
       const match = url.match(/eventbrite\.com\/e\/[^\/]+-(\d+)/);
       return match ? match[1] : null;
     }
@@ -30,6 +31,7 @@ export default async function handler(req, res) {
     const events = rows
       .filter(row => {
         const title = row[2] || '';
+        // Exclude Hong Kong Observation Wheel if needed
         return title !== 'Hong Kong Observation Wheel';
       })
       .map(row => {
@@ -47,25 +49,26 @@ export default async function handler(req, res) {
         const eventbriteId = extractEventbriteId(ticketUrl);
         
         return {
-          id: row[0],
-          title: row[2],
+          id: row[0], // event_id
+          title: row[2], // title
           date: row[5]?.split('T')[0],
           endDate: row[6]?.split('T')[0],
           startTime: startDateTime.toLocaleTimeString('en-US', timeOptions),
           endTime: endDateTime.toLocaleTimeString('en-US', timeOptions),
-          description: row[9] || '',
-          imageUrl: row[10] || '',
+          description: row[9] || '', // summary
+          imageUrl: row[10] || '', // image_url
           ticketUrl: ticketUrl,
-          eventbriteId: eventbriteId,
+          eventbriteId: eventbriteId, // ADD THIS LINE
           detailsUrl: ticketUrl,
           isFree: row[12] === 'TRUE',
-          status: row[3],
+          status: row[3], // status
         };
       })
-      .filter(event => event.status === 'live');
+      .filter(event => event.status === 'live'); // Only show live events
 
+    // Enable CORS if needed
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Cache-Control', 's-maxage=300');
+    res.setHeader('Cache-Control', 's-maxage=300'); // Cache for 5 minutes
     
     res.status(200).json(events);
     
