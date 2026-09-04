@@ -175,12 +175,12 @@ function renderEvents(dayEvents) {
             <p class="event-time">${event.startTime} - ${event.endTime}</p>
             <p class="event-description">${event.description}</p>
             <div class="event-buttons">
-                ${event.isFree ? '<span class="free-badge">FREE</span>' : ""}
                 ${event.eventbriteId ? 
                   `<button class="event-btn event-btn-primary" data-eventbrite-id="${event.eventbriteId}">Get Tickets</button>` 
                   : event.ticketUrl ? 
                   `<a href="${event.ticketUrl}" class="event-btn event-btn-primary" target="_blank">Get Tickets</a>` 
                   : ""}
+                ${event.isFree ? '<span class="free-badge">FREE</span>' : ""}
             </div>
         </div>
     `,
