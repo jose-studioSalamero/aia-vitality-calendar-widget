@@ -23,9 +23,9 @@ export default async function handler(req, res) {
     // Helper function to extract Eventbrite ID from URL
     function extractEventbriteId(url) {
       if (!url) return null;
-      // Match patterns like: eventbrite.com/e/event-name-123456789
-      const match = url.match(/eventbrite\.com\/e\/[^\/]+-(\d+)/);
-      return match ? match[1] : null;
+      // Match patterns for both .com and .hk domains: eventbrite.com/e/event-name-123456789 or eventbrite.hk/e/event-name-123456789
+      const match = url.match(/eventbrite\.(com|hk)\/e\/[^\/]+-(\d+)/);
+      return match ? match[2] : null; // match[2] because match[1] is the domain (.com or .hk)
     }
     
     const events = rows
@@ -48,6 +48,13 @@ export default async function handler(req, res) {
         const ticketUrl = row[11] || '';
         const eventbriteId = extractEventbriteId(ticketUrl);
         
+        // Debug logging
+        console.log('Processing event:', {
+          title: row[2],
+          ticketUrl: ticketUrl,
+          extractedId: eventbriteId
+        });
+        
         return {
           id: row[0], // event_id
           title: row[2], // title
@@ -58,7 +65,7 @@ export default async function handler(req, res) {
           description: row[9] || '', // summary
           imageUrl: row[10] || '', // image_url
           ticketUrl: ticketUrl,
-          eventbriteId: eventbriteId, // ADD THIS LINE
+          eventbriteId: eventbriteId,
           detailsUrl: ticketUrl,
           isFree: row[12] === 'TRUE',
           status: row[3], // status
