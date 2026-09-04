@@ -123,6 +123,12 @@ body {
     border: 2px solid #e03f62;
 }
 
+.calendar-day.selected {
+    background-color: #b8325d;
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(231, 0, 66, 0.4);
+}
+
 .powered-by {
     position: absolute;
     bottom: 24px;
@@ -213,6 +219,7 @@ body {
 
 .event-buttons {
     display: flex;
+    align-items: center;
     gap: 12px;
     flex-wrap: wrap;
 }
@@ -247,39 +254,76 @@ body {
     background-color: #d4d4d4;
 }
 
-/* Responsive */
+.free-badge {
+    background-color: #4caf50;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+}
+
+/* Responsive - Keep horizontal layout for tablets */
+@media (max-width: 1024px) {
+    .calendar-container {
+        grid-template-columns: 300px 1fr;
+    }
+    
+    .calendar-section {
+        padding: 16px;
+    }
+}
+
+/* Smaller screens - still horizontal but compact */
 @media (max-width: 768px) {
     .calendar-container {
-        grid-template-columns: 1fr;
+        grid-template-columns: 280px 1fr;
     }
-
+    
     .calendar-section {
-        border-right: none;
-        border-bottom: 1px solid #e5e7eb;
+        padding: 12px;
+    }
+    
+    .calendar-header {
+        margin-bottom: 24px;
+    }
+    
+    .events-list {
+        padding: 16px;
     }
 }
 
-/* Add this for selected date styling */
-.calendar-day.selected {
-  background-color: #b8325d; /* Darker shade */
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(231, 0, 66, 0.4);
-}
-
-/* Update the event buttons container to center align */
-.event-buttons {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
-.free-badge {
-  background-color: #4caf50;
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  font-weight: 600;
-  font-size: 0.875rem;
-  text-transform: uppercase;
+/* Very small screens - minimum viable horizontal layout */
+@media (max-width: 640px) {
+    .calendar-container {
+        grid-template-columns: 240px 1fr;
+        font-size: 14px;
+    }
+    
+    .calendar-section {
+        padding: 8px;
+    }
+    
+    .calendar-header h2 {
+        font-size: 12px;
+    }
+    
+    .calendar-day {
+        font-size: 12px;
+        margin: 2px;
+    }
+    
+    .day-header {
+        font-size: 10px;
+        padding: 8px 0;
+    }
+    
+    .events-header h2 {
+        font-size: 14px;
+    }
+    
+    .event-card h3 {
+        font-size: 16px;
+    }
 }

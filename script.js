@@ -16,6 +16,7 @@ async function init() {
 // Fetch events from Google Sheets (via API)
 async function fetchEvents() {
   try {
+    console.log('Fetching events from:', API_ENDPOINT);
     const response = await fetch(API_ENDPOINT);
     
     if (!response.ok) {
@@ -23,7 +24,8 @@ async function fetchEvents() {
     }
     
     events = await response.json();
-    console.log(`Loaded ${events.length} events`);
+    console.log('Loaded events:', events.length);
+    console.log('Events:', events);
     
   } catch (error) {
     console.error("Error fetching events:", error);
@@ -31,44 +33,34 @@ async function fetchEvents() {
   }
 }
 
-// Rest of your calendar code stays the same...
-// (renderCalendar, getEventDatesForMonth, selectDate, renderEvents, setupEventListeners functions)
-
 // Render calendar
 function renderCalendar() {
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
-  // Update month header
   document.getElementById("current-month").textContent =
     currentDate.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
-  // Get calendar data
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  // Get event dates for highlighting
   const eventDates = getEventDatesForMonth(year, month);
 
-  // Render days
   const daysContainer = document.getElementById("calendar-days");
   daysContainer.innerHTML = "";
 
-  // Empty cells before month starts
   for (let i = 0; i < firstDay; i++) {
     const emptyDay = document.createElement("div");
     emptyDay.className = "calendar-day empty";
     daysContainer.appendChild(emptyDay);
   }
 
-  // Actual days
   for (let day = 1; day <= daysInMonth; day++) {
     const dayEl = document.createElement("div");
     dayEl.className = "calendar-day";
     dayEl.textContent = day;
     dayEl.dataset.date = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 
-    // Check if this day has events
     const dateStr = dayEl.dataset.date;
     if (eventDates.start.has(dateStr)) {
       dayEl.classList.add("has-event");
@@ -76,7 +68,6 @@ function renderCalendar() {
       dayEl.classList.add("has-event-range");
     }
 
-    // Check if today
     const today = new Date();
     if (
       year === today.getFullYear() &&
@@ -86,30 +77,26 @@ function renderCalendar() {
       dayEl.classList.add("today");
     }
 
-    // Click handler
     dayEl.addEventListener("click", () => selectDate(dateStr));
 
     daysContainer.appendChild(dayEl);
   }
 }
 
-// Get event dates for current month
 function getEventDatesForMonth(year, month) {
   const startDates = new Set();
   const rangeDates = new Set();
 
   events.forEach((event) => {
-    const eventStart = new Date(event.date);
-    const eventEnd = event.endDate ? new Date(event.endDate) : eventStart;
+    const eventStart = new Date(event.date + "T00:00:00");
+    const eventEnd = event.endDate ? new Date(event.endDate + "T00:00:00") : eventStart;
 
-    // Check if event is in current month
     if (
       (eventStart.getFullYear() === year && eventStart.getMonth() === month) ||
       (eventEnd.getFullYear() === year && eventEnd.getMonth() === month) ||
       (eventStart < new Date(year, month, 1) &&
         eventEnd > new Date(year, month + 1, 0))
     ) {
-      // Add start date
       if (
         eventStart.getFullYear() === year &&
         eventStart.getMonth() === month
@@ -117,7 +104,6 @@ function getEventDatesForMonth(year, month) {
         startDates.add(event.date);
       }
 
-      // Add range dates
       let currentDate = new Date(
         Math.max(eventStart, new Date(year, month, 1)),
       );
@@ -138,23 +124,19 @@ function getEventDatesForMonth(year, month) {
   return { start: startDates, range: rangeDates };
 }
 
-// Select date and show events
 function selectDate(dateStr) {
   selectedDate = dateStr;
   const date = new Date(dateStr + "T00:00:00");
 
-  // Remove previous selection
   document.querySelectorAll('.calendar-day.selected').forEach(el => {
     el.classList.remove('selected');
   });
 
-  // Add selected class to clicked date
   const clickedDay = document.querySelector(`[data-date="${dateStr}"]`);
   if (clickedDay) {
     clickedDay.classList.add('selected');
   }
 
-  // Update header
   document.getElementById("selected-date").textContent =
     date.toLocaleDateString("en-US", {
       weekday: "long",
@@ -162,34 +144,19 @@ function selectDate(dateStr) {
       day: "numeric",
     });
 
-  console.log('=== DATE FILTERING DEBUG ===');
-  console.log('Selected dateStr:', dateStr);
-  console.log('First 3 events:', events.slice(0, 3).map(e => ({
-    title: e.title,
-    date: e.date,
-    endDate: e.endDate
-  })));
+  console.log('Selected date:', dateStr);
 
-  // Filter events for this date
   const dayEvents = events.filter((event) => {
-    // Simple string comparison for dates in YYYY-MM-DD format
     const isMatch = event.date === dateStr || 
                     (event.endDate && dateStr >= event.date && dateStr <= event.endDate);
-    
-    if (isMatch) {
-      console.log('MATCHED:', event.title, event.date);
-    }
-    
     return isMatch;
   });
 
   console.log('Day events found:', dayEvents);
-  console.log('Total events:', events.length);
 
-  // Render events
   renderEvents(dayEvents);
 }
-// Render events list
+
 function renderEvents(dayEvents) {
   const eventsContainer = document.getElementById("events-list");
 
@@ -208,16 +175,42 @@ function renderEvents(dayEvents) {
             <p class="event-time">${event.startTime} - ${event.endTime}</p>
             <p class="event-description">${event.description}</p>
             <div class="event-buttons">
-                ${event.ticketUrl ? `<a href="${event.ticketUrl}" class="event-btn event-btn-primary" target="_blank">Get Tickets</a>` : ""}
                 ${event.isFree ? '<span class="free-badge">FREE</span>' : ""}
+                ${event.eventbriteId ? 
+                  `<button class="event-btn event-btn-primary" data-eventbrite-id="${event.eventbriteId}">Get Tickets</button>` 
+                  : event.ticketUrl ? 
+                  `<a href="${event.ticketUrl}" class="event-btn event-btn-primary" target="_blank">Get Tickets</a>` 
+                  : ""}
             </div>
         </div>
     `,
     )
     .join("");
+
+  // Add event listeners to all Eventbrite ticket buttons
+  document.querySelectorAll('[data-eventbrite-id]').forEach(button => {
+    button.addEventListener('click', function() {
+      const eventbriteId = this.getAttribute('data-eventbrite-id');
+      openEventbriteCheckout(eventbriteId);
+    });
+  });
 }
 
-// Setup event listeners
+function openEventbriteCheckout(eventbriteId) {
+  console.log('Sending message to parent window for Eventbrite ID:', eventbriteId);
+  
+  // Send message to parent window (Webflow site)
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({
+      type: 'OPEN_EVENTBRITE_MODAL',
+      eventbriteId: eventbriteId
+    }, '*');
+  } else {
+    // Fallback if not in iframe
+    window.open(`https://www.eventbrite.com/e/${eventbriteId}`, '_blank');
+  }
+}
+
 function setupEventListeners() {
   document.getElementById("prev-month").addEventListener("click", () => {
     currentDate.setMonth(currentDate.getMonth() - 1);
@@ -230,5 +223,4 @@ function setupEventListeners() {
   });
 }
 
-// Start app
 init();
