@@ -76,7 +76,7 @@ body {
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 8px;
+  gap: 12px;
   margin-bottom: 24px;
 }
 
@@ -98,75 +98,54 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: 50%;
   font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
   position: relative;
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: transparent;
+  border: none;
+  color: #111827;
 }
 
-.calendar-day:hover {
-  background: #f3f4f6;
-  border-color: #d1d5db;
+.calendar-day:hover:not(.empty) {
+  background: #fee2e2;
 }
 
 .calendar-day.empty {
   cursor: default;
   background: transparent;
-  border: none;
 }
 
 .calendar-day.today {
   background: #e03f62;
   color: white;
   font-weight: 600;
-  border-color: #e03f62;
 }
 
 .calendar-day.has-event {
-  background: #fef3c7;
-  color: #92400e;
+  background: #e03f62;
+  color: white;
   font-weight: 600;
-  border-color: #fbbf24;
 }
 
 .calendar-day.has-event-range {
-  background: #fef9e7;
-  color: #92400e;
-  border-color: #fde68a;
+  background: #fecaca;
+  color: #991b1b;
+  font-weight: 600;
 }
 
 .calendar-day.selected {
   background: #e03f62;
   color: white;
   font-weight: 600;
-  border-color: #e03f62;
+  box-shadow: 0 0 0 3px rgba(224, 63, 98, 0.2);
 }
 
-/* Powered By */
+/* Remove Powered By */
 .powered-by {
-  margin-top: 24px;
-  text-align: center;
-}
-
-.powered-by a {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: #6b7280;
-  text-decoration: none;
-  font-size: 13px;
-  transition: color 0.2s;
-}
-
-.powered-by a:hover {
-  color: #374151;
-}
-
-.powered-by span {
-  font-size: 16px;
+  display: none;
 }
 
 /* Events Section */
