@@ -400,10 +400,6 @@ body {
 
 /* Responsive Design */
 @media (max-width: 968px) {
-  .calendar-container {
-    grid-template-columns: 1fr;
-  }
-
   .calendar-section {
     border-right: none;
     border-bottom: 1px solid #e0e0e0;
