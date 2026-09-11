@@ -251,8 +251,14 @@ body {
 }
 
 .event-btn-primary {
+  display: flex;
+  padding: 1rem 1.5rem;
+  justify-content: center;
+  align-items: center;
+  gap: 0.625rem;
   background-color: #e7004a;
   color: white;
+  font-family: "Inter Tight", sans-serif;
 }
 
 .event-btn-primary:hover {

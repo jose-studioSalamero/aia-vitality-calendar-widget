@@ -8,11 +8,21 @@ let selectedDate = null;
 let currentView = 'list'; // 'list' or 'detail'
 let selectedEvent = null;
 
+function getTodayDateStr() {
+  const today = new Date();
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+}
+
 // Initialize
 async function init() {
-  await fetchEvents();
   renderCalendar();
   setupEventListeners();
+  selectDate(getTodayDateStr());
+  await fetchEvents();
+  renderCalendar();
+  if (selectedDate) {
+    selectDate(selectedDate);
+  }
 }
 
 // Fetch events from Google Sheets (via API)
@@ -77,6 +87,10 @@ function renderCalendar() {
       day === today.getDate()
     ) {
       dayEl.classList.add("today");
+    }
+
+    if (selectedDate === dateStr) {
+      dayEl.classList.add("selected");
     }
 
     dayEl.addEventListener("click", () => selectDate(dateStr));
