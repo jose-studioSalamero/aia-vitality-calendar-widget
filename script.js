@@ -28,6 +28,7 @@ function getTodayDateStr() {
 async function init() {
   renderCalendar();
   setupEventListeners();
+  setupMessageListener(); // Add this line
   selectDate(getTodayDateStr());
   await fetchEvents();
   renderCalendar();
@@ -194,7 +195,7 @@ function renderEvents(dayEvents) {
   eventsContainer.innerHTML = dayEvents
     .map(
       (event) => `
-        <div class="event-card">
+        <div class="event-card" data-event-id="${event.id}">
             ${event.imageUrl ? `<img src="${event.imageUrl}" alt="${event.title}" class="event-image">` : ""}
             <h3>${event.title}</h3>
             <p class="event-time">${event.startTime} - ${event.endTime}</p>
@@ -205,7 +206,7 @@ function renderEvents(dayEvents) {
                   : event.ticketUrl ? 
                   `<a href="${event.ticketUrl}" class="event-btn event-btn-primary" target="_blank">Get Tickets</a>` 
                   : ""}
-                <button class="event-btn event-btn-secondary" data-event-id="${event.id}">Learn More</button>
+                <button class="event-btn event-btn-secondary" data-event-detail="${event.id}">Learn More</button>
             </div>
         </div>
     `,
@@ -219,9 +220,9 @@ function renderEvents(dayEvents) {
     });
   });
 
-  document.querySelectorAll('[data-event-id]').forEach(button => {
+  document.querySelectorAll('[data-event-detail]').forEach(button => {
     button.addEventListener('click', function() {
-      const eventId = this.getAttribute('data-event-id');
+      const eventId = this.getAttribute('data-event-detail');
       const event = events.find(e => e.id === eventId);
       if (event) {
         showEventDetail(event);
@@ -309,6 +310,49 @@ function openEventbriteCheckout(eventbriteId) {
   } else {
     window.open(`https://www.eventbrite.com/e/${eventbriteId}`, '_blank');
   }
+}
+
+// NEW: Setup message listener for opening events from parent
+function setupMessageListener() {
+  window.addEventListener('message', function(event) {
+    console.log('Received message:', event.data);
+    
+    // For development, accept messages from any origin
+    // In production, you should check: if (event.origin !== 'https://yourdomain.com') return;
+    
+    if (event.data.type === 'OPEN_EVENT' && event.data.eventId) {
+      openEventById(event.data.eventId);
+    }
+  });
+}
+
+// NEW: Open event by ID
+function openEventById(eventId) {
+  console.log('Opening event by ID:', eventId);
+  
+  // Find the event
+  const event = events.find(e => e.id === eventId || e.eventbriteId === eventId);
+  
+  if (!event) {
+    console.warn('Event not found:', eventId);
+    return;
+  }
+  
+  console.log('Found event:', event);
+  
+  // Select the date of the event
+  selectDate(event.date);
+  
+  // Wait for the events list to render, then show detail
+  setTimeout(() => {
+    showEventDetail(event);
+    
+    // Scroll the event detail into view
+    const eventDetail = document.querySelector('.event-detail');
+    if (eventDetail) {
+      eventDetail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, 100);
 }
 
 function setupEventListeners() {
