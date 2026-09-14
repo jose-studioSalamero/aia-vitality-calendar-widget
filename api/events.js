@@ -57,6 +57,7 @@ export default async function handler(req, res) {
         
         return {
           id: row[0], // event_id
+          event_id: row[0],
           title: row[2], // title
           date: row[5]?.split('T')[0],
           endDate: row[6]?.split('T')[0],

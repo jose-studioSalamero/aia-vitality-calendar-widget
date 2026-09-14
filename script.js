@@ -5,12 +5,23 @@ const API_ENDPOINT = "/api/events";
 let currentDate = new Date();
 let events = [];
 let selectedDate = null;
-let currentView = 'list'; // 'list' or 'detail'
+let currentView = 'list';
 let selectedEvent = null;
 
+function toDateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function parseLocalDate(dateStr) {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
 function getTodayDateStr() {
-  const today = new Date();
-  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  return toDateKey(new Date());
 }
 
 // Initialize
@@ -67,6 +78,8 @@ function renderCalendar() {
     daysContainer.appendChild(emptyDay);
   }
 
+  const todayStr = getTodayDateStr();
+
   for (let day = 1; day <= daysInMonth; day++) {
     const dayEl = document.createElement("div");
     dayEl.className = "calendar-day";
@@ -80,12 +93,7 @@ function renderCalendar() {
       dayEl.classList.add("has-event-range");
     }
 
-    const today = new Date();
-    if (
-      year === today.getFullYear() &&
-      month === today.getMonth() &&
-      day === today.getDate()
-    ) {
+    if (dateStr === todayStr) {
       dayEl.classList.add("today");
     }
 
@@ -104,8 +112,8 @@ function getEventDatesForMonth(year, month) {
   const rangeDates = new Set();
 
   events.forEach((event) => {
-    const eventStart = new Date(event.date + "T00:00:00");
-    const eventEnd = event.endDate ? new Date(event.endDate + "T00:00:00") : eventStart;
+    const eventStart = parseLocalDate(event.date);
+    const eventEnd = event.endDate ? parseLocalDate(event.endDate) : eventStart;
 
     if (
       (eventStart.getFullYear() === year && eventStart.getMonth() === month) ||
@@ -128,7 +136,7 @@ function getEventDatesForMonth(year, month) {
       );
 
       while (currentDate <= endDate) {
-        const dateStr = currentDate.toISOString().split("T")[0];
+        const dateStr = toDateKey(currentDate);
         if (dateStr !== event.date) {
           rangeDates.add(dateStr);
         }
@@ -143,7 +151,7 @@ function getEventDatesForMonth(year, month) {
 function selectDate(dateStr) {
   selectedDate = dateStr;
   currentView = 'list';
-  const date = new Date(dateStr + "T00:00:00");
+  const date = parseLocalDate(dateStr);
 
   document.querySelectorAll('.calendar-day.selected').forEach(el => {
     el.classList.remove('selected');
@@ -204,7 +212,6 @@ function renderEvents(dayEvents) {
     )
     .join("");
 
-  // Add event listeners to all Eventbrite ticket buttons
   document.querySelectorAll('[data-eventbrite-id]').forEach(button => {
     button.addEventListener('click', function() {
       const eventbriteId = this.getAttribute('data-eventbrite-id');
@@ -212,7 +219,6 @@ function renderEvents(dayEvents) {
     });
   });
 
-  // Add event listeners to all Learn More buttons
   document.querySelectorAll('[data-event-id]').forEach(button => {
     button.addEventListener('click', function() {
       const eventId = this.getAttribute('data-event-id');
@@ -229,6 +235,7 @@ function showEventDetail(event) {
   selectedEvent = event;
   
   const eventsContainer = document.getElementById("events-list");
+  const eventDate = parseLocalDate(event.date);
   
   eventsContainer.innerHTML = `
     <div class="event-detail">
@@ -246,7 +253,7 @@ function showEventDetail(event) {
       <div class="event-detail-info">
         <div class="info-item">
           <strong>📅 Date:</strong>
-          <span>${new Date(event.date + "T00:00:00").toLocaleDateString("en-US", { 
+          <span>${eventDate.toLocaleDateString("en-US", { 
             weekday: 'long', 
             year: 'numeric', 
             month: 'long', 
@@ -278,12 +285,10 @@ function showEventDetail(event) {
     </div>
   `;
 
-  // Add back button listener
   document.getElementById('back-to-list').addEventListener('click', () => {
     selectDate(selectedDate);
   });
 
-  // Add ticket button listener
   const ticketBtn = eventsContainer.querySelector('[data-eventbrite-id]');
   if (ticketBtn) {
     ticketBtn.addEventListener('click', function() {
@@ -296,14 +301,12 @@ function showEventDetail(event) {
 function openEventbriteCheckout(eventbriteId) {
   console.log('Sending message to parent window for Eventbrite ID:', eventbriteId);
   
-  // Send message to parent window (Webflow site)
   if (window.parent && window.parent !== window) {
     window.parent.postMessage({
       type: 'OPEN_EVENTBRITE_MODAL',
       eventbriteId: eventbriteId
     }, '*');
   } else {
-    // Fallback if not in iframe
     window.open(`https://www.eventbrite.com/e/${eventbriteId}`, '_blank');
   }
 }
