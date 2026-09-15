@@ -418,4 +418,28 @@ function setupEventListeners() {
   });
 }
 
+document.querySelectorAll('.calendar-day').forEach(day => {
+  day.addEventListener('click', (e) => {
+    e.preventDefault();
+    const eventId = day.getAttribute('data-event');
+    if (eventId) {
+      showEventDetail(eventId);
+      window.parent.postMessage({ 
+        type: 'navigate', 
+        eventId: eventId 
+      }, '*');
+    }
+  });
+});
+
+document.querySelectorAll('a[href^="#"]').forEach(link => {
+  link.addEventListener('click', (e) => {
+    e.preventDefault();
+    const eventId = link.getAttribute('data-event');
+    if (eventId) {
+      showEventDetail(eventId);
+    }
+  });
+});
+
 init();
