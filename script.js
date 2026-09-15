@@ -56,7 +56,7 @@ function parseLocalDate(dateStr) {
 async function init() {
   renderCalendar();
   setupEventListeners();
-  setupMessageListener(); // Add this line
+  setupMessageListener();
   selectDate(getTodayDateStr());
   await fetchEvents();
   renderCalendar();
@@ -272,6 +272,7 @@ function renderEvents(dayEvents) {
   });
 }
 
+// UPDATED: Single showEventDetail function with height notification
 function showEventDetail(event) {
   currentView = 'detail';
   selectedEvent = event;
@@ -338,6 +339,11 @@ function showEventDetail(event) {
       openEventbriteCheckout(eventbriteId);
     });
   }
+
+  // NEW: Notify parent of height change
+  setTimeout(() => {
+    notifyParentOfHeight();
+  }, 100);
 }
 
 function openEventbriteCheckout(eventbriteId) {
@@ -353,13 +359,10 @@ function openEventbriteCheckout(eventbriteId) {
   }
 }
 
-// NEW: Setup message listener for opening events from parent
+// Setup message listener for opening events from parent
 function setupMessageListener() {
   window.addEventListener('message', function(event) {
     console.log('Received message:', event.data);
-    
-    // For development, accept messages from any origin
-    // In production, you should check: if (event.origin !== 'https://yourdomain.com') return;
     
     if (event.data.type === 'OPEN_EVENT' && event.data.eventId) {
       openEventById(event.data.eventId);
@@ -367,11 +370,10 @@ function setupMessageListener() {
   });
 }
 
-// NEW: Open event by ID
+// Open event by ID
 function openEventById(eventId) {
   console.log('Opening event by ID:', eventId);
   
-  // Find the event
   const event = events.find(e => e.id === eventId || e.eventbriteId === eventId);
   
   if (!event) {
@@ -381,19 +383,27 @@ function openEventById(eventId) {
   
   console.log('Found event:', event);
   
-  // Select the date of the event
   selectDate(event.date);
   
-  // Wait for the events list to render, then show detail
   setTimeout(() => {
     showEventDetail(event);
     
-    // Scroll the event detail into view
     const eventDetail = document.querySelector('.event-detail');
     if (eventDetail) {
       eventDetail.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, 100);
+}
+
+// NEW: Notify parent of height changes
+function notifyParentOfHeight() {
+  if (window.parent && window.parent !== window) {
+    const height = document.body.scrollHeight;
+    window.parent.postMessage({
+      type: 'RESIZE',
+      height: height
+    }, '*');
+  }
 }
 
 function setupEventListeners() {
