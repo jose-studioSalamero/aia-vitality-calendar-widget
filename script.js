@@ -1,8 +1,40 @@
 // Configuration
 const API_ENDPOINT = "/api/events";
+const HONG_KONG_TIME_ZONE = "Asia/Hong_Kong";
+
+function getHongKongDateParts(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: HONG_KONG_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+
+  const getPart = (type) => parts.find((part) => part.type === type).value;
+
+  return {
+    year: Number(getPart("year")),
+    month: Number(getPart("month")),
+    day: Number(getPart("day")),
+  };
+}
+
+function getTodayDateStr(date = new Date()) {
+  const { year, month, day } = getHongKongDateParts(date);
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function getHongKongTodayDate(date = new Date()) {
+  const { year, month, day } = getHongKongDateParts(date);
+  return new Date(year, month - 1, day);
+}
+
+function isPastDate(dateStr, todayStr = getTodayDateStr()) {
+  return dateStr < todayStr;
+}
 
 // State
-let currentDate = new Date();
+let currentDate = getHongKongTodayDate();
 let events = [];
 let selectedDate = null;
 let currentView = 'list';
@@ -18,10 +50,6 @@ function toDateKey(date) {
 function parseLocalDate(dateStr) {
   const [year, month, day] = dateStr.split('-').map(Number);
   return new Date(year, month - 1, day);
-}
-
-function getTodayDateStr() {
-  return toDateKey(new Date());
 }
 
 // Initialize
@@ -88,21 +116,30 @@ function renderCalendar() {
     dayEl.dataset.date = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 
     const dateStr = dayEl.dataset.date;
-    if (eventDates.start.has(dateStr)) {
-      dayEl.classList.add("has-event");
-    } else if (eventDates.range.has(dateStr)) {
-      dayEl.classList.add("has-event-range");
+    const isPast = isPastDate(dateStr, todayStr);
+
+    if (!isPast) {
+      if (eventDates.start.has(dateStr)) {
+        dayEl.classList.add("has-event");
+      } else if (eventDates.range.has(dateStr)) {
+        dayEl.classList.add("has-event-range");
+      }
     }
 
     if (dateStr === todayStr) {
       dayEl.classList.add("today");
     }
 
-    if (selectedDate === dateStr) {
-      dayEl.classList.add("selected");
-    }
+    if (isPast) {
+      dayEl.classList.add("past");
+      dayEl.setAttribute("aria-disabled", "true");
+    } else {
+      if (selectedDate === dateStr) {
+        dayEl.classList.add("selected");
+      }
 
-    dayEl.addEventListener("click", () => selectDate(dateStr));
+      dayEl.addEventListener("click", () => selectDate(dateStr));
+    }
 
     daysContainer.appendChild(dayEl);
   }
@@ -150,6 +187,10 @@ function getEventDatesForMonth(year, month) {
 }
 
 function selectDate(dateStr) {
+  if (isPastDate(dateStr)) {
+    return;
+  }
+
   selectedDate = dateStr;
   currentView = 'list';
   const date = parseLocalDate(dateStr);

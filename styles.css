@@ -109,11 +109,12 @@ body {
   color: #111827;
 }
 
-.calendar-day:hover:not(.empty) {
+.calendar-day:hover:not(.empty):not(.past) {
   background-color: #f3f4f6;
 }
 
-.calendar-day.empty {
+.calendar-day.empty,
+.calendar-day.past {
   cursor: default;
   background: transparent;
 }
