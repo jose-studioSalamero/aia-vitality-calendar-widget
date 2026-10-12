@@ -60,7 +60,6 @@ body {
   cursor: pointer;
   color: #9ca3af;
   padding: 6px;
-  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -76,74 +75,130 @@ body {
   height: 20px;
 }
 
+/* ===== Calendar Grid — dotted dividers instead of gaps ===== */
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 8px;
+  gap: 0;
+}
+
+.day-header,
+.calendar-day {
+  border-right: 1px dotted rgba(0, 0, 0, 0.10);
+  border-bottom: 1px dotted rgba(0, 0, 0, 0.10);
+}
+
+.day-header:nth-child(7n),
+.calendar-day:nth-child(7n) {
+  border-right: none;
 }
 
 .day-header {
   text-align: center;
   font-size: 12px;
   font-weight: 600;
-  color: #6b7280;
+  color: #9ca3af;
   padding: 8px 0;
+  border-bottom: 1px dotted rgba(0, 0, 0, 0.10);
 }
 
 #calendar-days {
   display: contents;
 }
 
+/* ===== Base day cell (future dates) ===== */
 .calendar-day {
   aspect-ratio: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  font-size: 14px;
   cursor: pointer;
-  transition: all 0.2s;
   position: relative;
-  background: transparent;
-  border: none;
-  color: #111827;
+  background: rgba(255, 255, 255, 0.50);
+  color: #000; /* future dates: black */
+  font-family: "Inter Tight", sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  font-style: normal;
+  line-height: normal;
+  text-transform: uppercase;
+  border-radius: 0;
+  padding: 20px 0;
+  transition: background-color 0.2s;
 }
 
-.calendar-day:hover:not(.empty):not(.past) {
-  background-color: #f3f4f6;
+.calendar-day:hover {
+  background-color: rgba(0, 0, 0, 0.04);
 }
 
-.calendar-day.empty,
-.calendar-day.past {
+.calendar-day.empty {
   cursor: default;
   background: transparent;
 }
 
-.calendar-day.today {
-  border: 2px solid #e7004a;
+/* ===== Past dates — unclickable ===== */
+.calendar-day.past-day {
+  cursor: default;
+  pointer-events: none;
+  background: rgba(255, 255, 255, 0.50);
+  color: #7A7A7A;
+  font-family: "Inter Tight", sans-serif;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 500;
+  line-height: normal;
+  text-transform: uppercase;
 }
 
+.calendar-day.past-day:hover {
+  background: rgba(255, 255, 255, 0.50);
+}
+
+/* ===== Today ===== */
+.calendar-day.today {
+  background-color: #fff;
+  color: rgb(231, 0, 66);
+  font-weight: 500;
+  border-radius: 0;
+}
+
+/* ===== Dates with an event (unselected) ===== */
 .calendar-day.has-event {
-  background-color: #e7004a;
-  color: white;
-  font-weight: 600;
+  background-color: #fff;
+  color: #000;
+  font-weight: 500;
+  border-radius: 0;
+}
+
+.calendar-day.has-event:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+/* ===== Selected date (filled square) ===== */
+.calendar-day.selected {
+  background-color: rgb(231, 0, 66);
+  color: #FFF;
+  font-weight: 500;
+  border-radius: 0;
+}
+
+.calendar-day.selected:hover {
+  background-color: #b8325d;
 }
 
 .calendar-day.has-event-range {
   background-color: #fecdd3;
   color: #be123c;
+  border-radius: 0;
 }
 
-.calendar-day.has-event:hover,
-.calendar-day.has-event-range:hover {
-  transform: scale(1.1);
-}
-
-.calendar-day.selected {
-  background-color: #b8325d;
-  color: white;
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(231, 0, 66, 0.4);
+/* Past dates always render muted, even if they have events */
+.calendar-day.past-day.has-event,
+.calendar-day.past-day.has-event-range {
+  background: rgba(255, 255, 255, 0.50);
+  color: #7A7A7A;
+  cursor: default;
+  pointer-events: none;
 }
 
 /* Remove Powered By */
@@ -240,7 +295,6 @@ body {
 
 .event-btn {
   padding: 0.75rem 1.5rem;
-  border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -282,7 +336,6 @@ body {
   background-color: #4caf50;
   color: white;
   padding: 0.5rem 1rem;
-  border-radius: 4px;
   font-weight: 600;
   font-size: 0.875rem;
   text-transform: uppercase;
