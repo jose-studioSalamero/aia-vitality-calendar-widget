@@ -321,7 +321,6 @@ body {
 
 .event-btn-primary:hover {
   background-color: #b8325d;
-  transform: translateY(-1px);
   box-shadow: 0 4px 6px -1px rgb(231 0 74 / 0.3);
 }
 
