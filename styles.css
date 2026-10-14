@@ -310,7 +310,6 @@ body {
 
 .event-btn-primary {
   display: flex;
-  padding: 1rem 1.5rem;
   justify-content: center;
   align-items: center;
   gap: 0.625rem;
