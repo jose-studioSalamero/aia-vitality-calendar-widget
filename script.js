@@ -1,6 +1,8 @@
 // Configuration
 const API_ENDPOINT = "/api/events";
 const HONG_KONG_TIME_ZONE = "Asia/Hong_Kong";
+const TIME_CHECK_INTERVAL_MS = 30 * 1000;        // re-check the clock every 30s
+const EVENT_REFRESH_INTERVAL_MS = 5 * 60 * 1000; // refetch events from API every 5 min
 
 function getHongKongDateParts(date = new Date()) {
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -19,6 +21,25 @@ function getHongKongDateParts(date = new Date()) {
   };
 }
 
+// NEW: get current hour/minute in Hong Kong time, 24h format
+function getHongKongTimeParts(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: HONG_KONG_TIME_ZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+
+  const getPart = (type) => parts.find((part) => part.type === type).value;
+  let hour = Number(getPart("hour"));
+  if (hour === 24) hour = 0; // some locales format midnight as 24
+
+  return {
+    hour,
+    minute: Number(getPart("minute")),
+  };
+}
+
 function getTodayDateStr(date = new Date()) {
   const { year, month, day } = getHongKongDateParts(date);
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
@@ -31,6 +52,75 @@ function getHongKongTodayDate(date = new Date()) {
 
 function isPastDate(dateStr, todayStr = getTodayDateStr()) {
   return dateStr < todayStr;
+}
+
+// NEW: parse a time string like "6:00 PM", "18:00", "6:00pm" into minutes since midnight
+function parseTimeToMinutes(timeStr) {
+  if (!timeStr || typeof timeStr !== "string") return null;
+
+  const str = timeStr.trim().toUpperCase();
+
+  // Match "H:MM AM/PM" or "HH:MM AM/PM"
+  let match = str.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/);
+  if (match) {
+    let hour = Number(match[1]);
+    const minute = Number(match[2]);
+    const meridiem = match[3];
+    if (meridiem === "PM" && hour !== 12) hour += 12;
+    if (meridiem === "AM" && hour === 12) hour = 0;
+    return hour * 60 + minute;
+  }
+
+  // Match 24-hour "HH:MM"
+  match = str.match(/^(\d{1,2}):(\d{2})$/);
+  if (match) {
+    const hour = Number(match[1]);
+    const minute = Number(match[2]);
+    return hour * 60 + minute;
+  }
+
+  return null; // unknown format, caller should treat as "not expired"
+}
+
+// NEW: is this specific event sold out?
+// ADJUST field names below to match whatever your API actually returns.
+function isEventSoldOut(event) {
+  if (!event) return false;
+  if (event.soldOut === true) return true;
+  if (event.isSoldOut === true) return true;
+  if (event.sold_out === true) return true;
+  if (typeof event.ticketsAvailable === "number" && event.ticketsAvailable <= 0) return true;
+  if (typeof event.status === "string" && event.status.toLowerCase() === "sold out") return true;
+  return false;
+}
+
+// NEW: has this event's time window already elapsed (HK time)?
+function isEventExpired(event, now = new Date()) {
+  if (!event) return true;
+
+  const todayStr = getTodayDateStr(now);
+  const endDateStr = event.endDate || event.date;
+
+  // Entire event (including any date range) is before today -> expired
+  if (endDateStr < todayStr) return true;
+
+  // Event ends on a future date -> not expired yet
+  if (endDateStr > todayStr) return false;
+
+  // Event ends today -> check the clock
+  if (!event.endTime) return false; // no end time info, assume still valid for today
+
+  const nowParts = getHongKongTimeParts(now);
+  const nowMinutes = nowParts.hour * 60 + nowParts.minute;
+  const endMinutes = parseTimeToMinutes(event.endTime);
+
+  if (endMinutes === null) return false; // couldn't parse, don't hide it
+  return nowMinutes >= endMinutes;
+}
+
+// NEW: combined visibility check used everywhere an event is displayed
+function isEventVisible(event, now = new Date()) {
+  return !isEventExpired(event, now) && !isEventSoldOut(event);
 }
 
 // State
@@ -63,6 +153,9 @@ async function init() {
   if (selectedDate) {
     selectDate(selectedDate);
   }
+
+  startTimeChecker();   // NEW: keep checking the clock
+  startAutoRefresh();   // NEW: periodically refetch events (sold-out status, etc.)
 }
 
 // Fetch events from Google Sheets (via API)
@@ -149,39 +242,41 @@ function getEventDatesForMonth(year, month) {
   const startDates = new Set();
   const rangeDates = new Set();
 
-  events.forEach((event) => {
-    const eventStart = parseLocalDate(event.date);
-    const eventEnd = event.endDate ? parseLocalDate(event.endDate) : eventStart;
+  events
+    .filter((event) => isEventVisible(event)) // NEW: skip expired/sold-out events entirely
+    .forEach((event) => {
+      const eventStart = parseLocalDate(event.date);
+      const eventEnd = event.endDate ? parseLocalDate(event.endDate) : eventStart;
 
-    if (
-      (eventStart.getFullYear() === year && eventStart.getMonth() === month) ||
-      (eventEnd.getFullYear() === year && eventEnd.getMonth() === month) ||
-      (eventStart < new Date(year, month, 1) &&
-        eventEnd > new Date(year, month + 1, 0))
-    ) {
       if (
-        eventStart.getFullYear() === year &&
-        eventStart.getMonth() === month
+        (eventStart.getFullYear() === year && eventStart.getMonth() === month) ||
+        (eventEnd.getFullYear() === year && eventEnd.getMonth() === month) ||
+        (eventStart < new Date(year, month, 1) &&
+          eventEnd > new Date(year, month + 1, 0))
       ) {
-        startDates.add(event.date);
-      }
-
-      let currentDate = new Date(
-        Math.max(eventStart, new Date(year, month, 1)),
-      );
-      const endDate = new Date(
-        Math.min(eventEnd, new Date(year, month + 1, 0)),
-      );
-
-      while (currentDate <= endDate) {
-        const dateStr = toDateKey(currentDate);
-        if (dateStr !== event.date) {
-          rangeDates.add(dateStr);
+        if (
+          eventStart.getFullYear() === year &&
+          eventStart.getMonth() === month
+        ) {
+          startDates.add(event.date);
         }
-        currentDate.setDate(currentDate.getDate() + 1);
+
+        let currentDate = new Date(
+          Math.max(eventStart, new Date(year, month, 1)),
+        );
+        const endDate = new Date(
+          Math.min(eventEnd, new Date(year, month + 1, 0)),
+        );
+
+        while (currentDate <= endDate) {
+          const dateStr = toDateKey(currentDate);
+          if (dateStr !== event.date) {
+            rangeDates.add(dateStr);
+          }
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
       }
-    }
-  });
+    });
 
   return { start: startDates, range: rangeDates };
 }
@@ -216,7 +311,7 @@ function selectDate(dateStr) {
   const dayEvents = events.filter((event) => {
     const isMatch = event.date === dateStr || 
                     (event.endDate && dateStr >= event.date && dateStr <= event.endDate);
-    return isMatch;
+    return isMatch && isEventVisible(event); // NEW: hide expired/sold-out events
   });
 
   console.log('Day events found:', dayEvents);
@@ -380,6 +475,11 @@ function openEventById(eventId) {
     console.warn('Event not found:', eventId);
     return;
   }
+
+  if (!isEventVisible(event)) {
+    console.warn('Event is expired or sold out, ignoring open request:', eventId);
+    return;
+  }
   
   console.log('Found event:', event);
   
@@ -404,6 +504,43 @@ function notifyParentOfHeight() {
       height: height
     }, '*');
   }
+}
+
+// NEW: re-render whatever is currently selected, respecting visibility rules
+function refreshSelectedDateEvents() {
+  if (!selectedDate) return;
+
+  // If we're looking at a detail view for an event that just expired/sold out, bounce back to list
+  if (currentView === 'detail' && selectedEvent && !isEventVisible(selectedEvent)) {
+    selectDate(selectedDate);
+    return;
+  }
+
+  if (currentView === 'list') {
+    const dayEvents = events.filter((event) => {
+      const isMatch = event.date === selectedDate ||
+                      (event.endDate && selectedDate >= event.date && selectedDate <= event.endDate);
+      return isMatch && isEventVisible(event);
+    });
+    renderEvents(dayEvents);
+  }
+}
+
+// NEW: periodically re-check the clock so expired events/days update live without a reload
+function startTimeChecker() {
+  setInterval(() => {
+    renderCalendar();
+    refreshSelectedDateEvents();
+  }, TIME_CHECK_INTERVAL_MS);
+}
+
+// NEW: periodically refetch events from the API so sold-out status stays current
+function startAutoRefresh() {
+  setInterval(async () => {
+    await fetchEvents();
+    renderCalendar();
+    refreshSelectedDateEvents();
+  }, EVENT_REFRESH_INTERVAL_MS);
 }
 
 function setupEventListeners() {
