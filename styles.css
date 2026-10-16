@@ -80,6 +80,7 @@ body {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 0;
+  flex-shrink: 0;
 }
 
 .day-header,
@@ -123,7 +124,6 @@ body {
   line-height: normal;
   text-transform: uppercase;
   border-radius: 0;
-  padding: 20px 0;
   transition: background-color 0.2s;
 }
 
@@ -137,7 +137,7 @@ body {
 }
 
 /* ===== Past dates — unclickable ===== */
-.calendar-day.past-day {
+.calendar-day.past {
   cursor: default;
   pointer-events: none;
   background: rgba(255, 255, 255, 0.50);
@@ -150,7 +150,7 @@ body {
   text-transform: uppercase;
 }
 
-.calendar-day.past-day:hover {
+.calendar-day.past:hover {
   background: rgba(255, 255, 255, 0.50);
 }
 
@@ -193,8 +193,8 @@ body {
 }
 
 /* Past dates always render muted, even if they have events */
-.calendar-day.past-day.has-event,
-.calendar-day.past-day.has-event-range {
+.calendar-day.past.has-event,
+.calendar-day.past.has-event-range {
   background: rgba(255, 255, 255, 0.50);
   color: #7A7A7A;
   cursor: default;
