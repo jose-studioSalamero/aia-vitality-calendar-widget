@@ -83,12 +83,6 @@ body {
   flex-shrink: 0;
 }
 
-.day-header,
-.calendar-day {
-  border-right: 1px dotted rgba(0, 0, 0, 0.10);
-  border-bottom: 1px dotted rgba(0, 0, 0, 0.10);
-}
-
 .day-header:nth-child(7n),
 .calendar-day:nth-child(7n) {
   border-right: none;
