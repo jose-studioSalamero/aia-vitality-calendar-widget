@@ -21,7 +21,6 @@ function getHongKongDateParts(date = new Date()) {
   };
 }
 
-// NEW: get current hour/minute in Hong Kong time, 24h format
 function getHongKongTimeParts(date = new Date()) {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: HONG_KONG_TIME_ZONE,
@@ -32,7 +31,7 @@ function getHongKongTimeParts(date = new Date()) {
 
   const getPart = (type) => parts.find((part) => part.type === type).value;
   let hour = Number(getPart("hour"));
-  if (hour === 24) hour = 0; // some locales format midnight as 24
+  if (hour === 24) hour = 0;
 
   return {
     hour,
@@ -54,13 +53,11 @@ function isPastDate(dateStr, todayStr = getTodayDateStr()) {
   return dateStr < todayStr;
 }
 
-// NEW: parse a time string like "6:00 PM", "18:00", "6:00pm" into minutes since midnight
 function parseTimeToMinutes(timeStr) {
   if (!timeStr || typeof timeStr !== "string") return null;
 
   const str = timeStr.trim().toUpperCase();
 
-  // Match "H:MM AM/PM" or "HH:MM AM/PM"
   let match = str.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/);
   if (match) {
     let hour = Number(match[1]);
@@ -71,7 +68,6 @@ function parseTimeToMinutes(timeStr) {
     return hour * 60 + minute;
   }
 
-  // Match 24-hour "HH:MM"
   match = str.match(/^(\d{1,2}):(\d{2})$/);
   if (match) {
     const hour = Number(match[1]);
@@ -79,11 +75,9 @@ function parseTimeToMinutes(timeStr) {
     return hour * 60 + minute;
   }
 
-  return null; // unknown format, caller should treat as "not expired"
+  return null;
 }
 
-// NEW: is this specific event sold out?
-// ADJUST field names below to match whatever your API actually returns.
 function isEventSoldOut(event) {
   if (!event) return false;
   if (event.soldOut === true) return true;
@@ -94,33 +88,35 @@ function isEventSoldOut(event) {
   return false;
 }
 
-// NEW: has this event's time window already elapsed (HK time)?
 function isEventExpired(event, now = new Date()) {
   if (!event) return true;
 
   const todayStr = getTodayDateStr(now);
   const endDateStr = event.endDate || event.date;
 
-  // Entire event (including any date range) is before today -> expired
   if (endDateStr < todayStr) return true;
-
-  // Event ends on a future date -> not expired yet
   if (endDateStr > todayStr) return false;
 
-  // Event ends today -> check the clock
-  if (!event.endTime) return false; // no end time info, assume still valid for today
+  if (!event.endTime) return false;
 
   const nowParts = getHongKongTimeParts(now);
   const nowMinutes = nowParts.hour * 60 + nowParts.minute;
   const endMinutes = parseTimeToMinutes(event.endTime);
 
-  if (endMinutes === null) return false; // couldn't parse, don't hide it
+  if (endMinutes === null) return false;
   return nowMinutes >= endMinutes;
 }
 
-// NEW: combined visibility check used everywhere an event is displayed
 function isEventVisible(event, now = new Date()) {
   return !isEventExpired(event, now) && !isEventSoldOut(event);
+}
+
+// NEW: resolve the best URL to send users to for "Learn More"
+function getEventbriteUrl(event) {
+  if (!event) return null;
+  if (event.ticketUrl) return event.ticketUrl;
+  if (event.eventbriteId) return `https://www.eventbrite.com/e/${event.eventbriteId}`;
+  return null;
 }
 
 // State
@@ -154,11 +150,10 @@ async function init() {
     selectDate(selectedDate);
   }
 
-  startTimeChecker();   // NEW: keep checking the clock
-  startAutoRefresh();   // NEW: periodically refetch events (sold-out status, etc.)
+  startTimeChecker();
+  startAutoRefresh();
 }
 
-// Fetch events from Google Sheets (via API)
 async function fetchEvents() {
   try {
     console.log('Fetching events from:', API_ENDPOINT);
@@ -178,7 +173,6 @@ async function fetchEvents() {
   }
 }
 
-// Render calendar
 function renderCalendar() {
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -243,7 +237,7 @@ function getEventDatesForMonth(year, month) {
   const rangeDates = new Set();
 
   events
-    .filter((event) => isEventVisible(event)) // NEW: skip expired/sold-out events entirely
+    .filter((event) => isEventVisible(event))
     .forEach((event) => {
       const eventStart = parseLocalDate(event.date);
       const eventEnd = event.endDate ? parseLocalDate(event.endDate) : eventStart;
@@ -311,7 +305,7 @@ function selectDate(dateStr) {
   const dayEvents = events.filter((event) => {
     const isMatch = event.date === dateStr || 
                     (event.endDate && dateStr >= event.date && dateStr <= event.endDate);
-    return isMatch && isEventVisible(event); // NEW: hide expired/sold-out events
+    return isMatch && isEventVisible(event);
   });
 
   console.log('Day events found:', dayEvents);
@@ -319,6 +313,7 @@ function selectDate(dateStr) {
   renderEvents(dayEvents);
 }
 
+// UPDATED: "Learn More" now opens the Eventbrite page in a new tab when possible
 function renderEvents(dayEvents) {
   const eventsContainer = document.getElementById("events-list");
 
@@ -330,7 +325,13 @@ function renderEvents(dayEvents) {
 
   eventsContainer.innerHTML = dayEvents
     .map(
-      (event) => `
+      (event) => {
+        const learnMoreUrl = getEventbriteUrl(event);
+        const learnMoreHtml = learnMoreUrl
+          ? `<a href="${learnMoreUrl}" class="event-btn event-btn-secondary" target="_blank" rel="noopener noreferrer">Learn More</a>`
+          : `<button class="event-btn event-btn-secondary" data-event-detail="${event.id}">Learn More</button>`;
+
+        return `
         <div class="event-card" data-event-id="${event.id}">
             ${event.imageUrl ? `<img src="${event.imageUrl}" alt="${event.title}" class="event-image">` : ""}
             <h3>${event.title}</h3>
@@ -340,12 +341,13 @@ function renderEvents(dayEvents) {
                 ${event.eventbriteId ? 
                   `<button class="event-btn event-btn-primary" data-eventbrite-id="${event.eventbriteId}">Get Tickets</button>` 
                   : event.ticketUrl ? 
-                  `<a href="${event.ticketUrl}" class="event-btn event-btn-primary" target="_blank">Get Tickets</a>` 
+                  `<a href="${event.ticketUrl}" class="event-btn event-btn-primary" target="_blank" rel="noopener noreferrer">Get Tickets</a>` 
                   : ""}
-                <button class="event-btn event-btn-secondary" data-event-detail="${event.id}">Learn More</button>
+                ${learnMoreHtml}
             </div>
         </div>
-    `,
+    `;
+      },
     )
     .join("");
 
@@ -356,6 +358,7 @@ function renderEvents(dayEvents) {
     });
   });
 
+  // Fallback only fires for events with no ticketUrl/eventbriteId at all
   document.querySelectorAll('[data-event-detail]').forEach(button => {
     button.addEventListener('click', function() {
       const eventId = this.getAttribute('data-event-detail');
@@ -367,7 +370,6 @@ function renderEvents(dayEvents) {
   });
 }
 
-// UPDATED: Single showEventDetail function with height notification
 function showEventDetail(event) {
   currentView = 'detail';
   selectedEvent = event;
@@ -416,9 +418,9 @@ function showEventDetail(event) {
         ${event.eventbriteId ? 
           `<button class="event-btn event-btn-primary event-btn-large" data-eventbrite-id="${event.eventbriteId}">Get Tickets</button>` 
           : event.ticketUrl ? 
-          `<a href="${event.ticketUrl}" class="event-btn event-btn-primary event-btn-large" target="_blank">Get Tickets</a>` 
+          `<a href="${event.ticketUrl}" class="event-btn event-btn-primary event-btn-large" target="_blank" rel="noopener noreferrer">Get Tickets</a>` 
           : ""}
-        ${event.ticketUrl ? `<a href="${event.ticketUrl}" class="event-btn event-btn-secondary" target="_blank">View on Eventbrite</a>` : ''}
+        ${event.ticketUrl ? `<a href="${event.ticketUrl}" class="event-btn event-btn-secondary" target="_blank" rel="noopener noreferrer">View on Eventbrite</a>` : ''}
       </div>
     </div>
   `;
@@ -435,7 +437,6 @@ function showEventDetail(event) {
     });
   }
 
-  // NEW: Notify parent of height change
   setTimeout(() => {
     notifyParentOfHeight();
   }, 100);
@@ -454,7 +455,6 @@ function openEventbriteCheckout(eventbriteId) {
   }
 }
 
-// Setup message listener for opening events from parent
 function setupMessageListener() {
   window.addEventListener('message', function(event) {
     console.log('Received message:', event.data);
@@ -465,7 +465,6 @@ function setupMessageListener() {
   });
 }
 
-// Open event by ID
 function openEventById(eventId) {
   console.log('Opening event by ID:', eventId);
   
@@ -495,7 +494,6 @@ function openEventById(eventId) {
   }, 100);
 }
 
-// NEW: Notify parent of height changes
 function notifyParentOfHeight() {
   if (window.parent && window.parent !== window) {
     const height = document.body.scrollHeight;
@@ -506,11 +504,9 @@ function notifyParentOfHeight() {
   }
 }
 
-// NEW: re-render whatever is currently selected, respecting visibility rules
 function refreshSelectedDateEvents() {
   if (!selectedDate) return;
 
-  // If we're looking at a detail view for an event that just expired/sold out, bounce back to list
   if (currentView === 'detail' && selectedEvent && !isEventVisible(selectedEvent)) {
     selectDate(selectedDate);
     return;
@@ -526,7 +522,6 @@ function refreshSelectedDateEvents() {
   }
 }
 
-// NEW: periodically re-check the clock so expired events/days update live without a reload
 function startTimeChecker() {
   setInterval(() => {
     renderCalendar();
@@ -534,7 +529,6 @@ function startTimeChecker() {
   }, TIME_CHECK_INTERVAL_MS);
 }
 
-// NEW: periodically refetch events from the API so sold-out status stays current
 function startAutoRefresh() {
   setInterval(async () => {
     await fetchEvents();
