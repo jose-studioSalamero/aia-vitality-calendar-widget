@@ -482,6 +482,11 @@ body {
   }
 }
 
+.calendar-day.empty{
+  background-color:transparent;
+  cursor:default;
+
+
 @media (max-width: 480px) {
   .calendar-container {
     grid-template-columns: 1fr;
