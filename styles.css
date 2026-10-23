@@ -122,7 +122,8 @@ body {
 }
 
 .calendar-day:hover {
-  background-color: rgba(0, 0, 0, 0.04);
+  background-color: #F4BBCB;
+  color: #E70042;
 }
 
 .calendar-day.empty {
@@ -134,8 +135,7 @@ body {
 .calendar-day.past {
   cursor: default;
   pointer-events: none;
-  background: rgba(255, 255, 255, 0.50);
-  color: #7A7A7A;
+  color: #CED2D9;
   font-family: "Inter Tight", sans-serif;
   font-size: 1rem;
   font-style: normal;
@@ -145,14 +145,10 @@ body {
   border-radius: 50%;
 }
 
-.calendar-day.past:hover {
-  background: rgba(255, 255, 255, 0.50);
-}
-
 /* ===== Today ===== */
 .calendar-day.today {
   background-color: #fff;
-  color: rgb(231, 0, 66);
+  color: #E70042;
   font-weight: 500;
   border-radius: 50%;
 }
@@ -165,20 +161,11 @@ body {
   border-radius: 50%;
 }
 
-.calendar-day.has-event:hover {
-  background-color: rgba(0, 0, 0, 0.04);
-}
-
-/* ===== Selected date (filled square) ===== */
 .calendar-day.selected {
-  background-color: rgb(231, 0, 66);
+  background-color: #E70042;
   color: #FFF;
   font-weight: 500;
   border-radius: 50%;
-}
-
-.calendar-day.selected:hover {
-  background-color: #b8325d;
 }
 
 .calendar-day.has-event-range {
