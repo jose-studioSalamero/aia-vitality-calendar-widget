@@ -279,31 +279,31 @@ function renderEvents(events) {
     return;
   }
 
-  eventsList.innerHTML = events.map(event => `
-    <div class="event-card" data-event-id="${event.id}">
-      <img src="${event.image}" alt="${event.title}" class="event-image" />
-      <h3>${event.title}</h3>
-      <div class="event-time">
-        ${formatEventDate(event.date)} ${event.startTime} - ${event.endTime}
-        ${event.isFree ? `<span class="free-badge">Free</span>` : ''}
-      </div>
-      <div class="event-buttons">
-        <button
-          class="event-btn event-btn-primary"
-          data-eventbrite-id="${event.eventbriteId || ''}"
-          data-ticket-url="${event.ticketUrl || ''}"
-        >
-          Get Tickets
-        </button>
-        <button
-          class="event-btn event-btn-secondary"
-          data-learn-more-url="${getEventbriteUrl(event) || ''}"
-        >
-          Learn More
-        </button>
-      </div>
+eventsList.innerHTML = events.map(event => `
+  <div class="event-card" data-event-id="${event.id}">
+    ${event.imageUrl ? `<img src="${event.imageUrl}" alt="${event.title}" class="event-image" />` : ''}
+    <h3>${event.title}</h3>
+    <div class="event-time">
+      📅 ${formatEventDate(event.date)} 🕐 ${event.startTime} - ${event.endTime}
+      ${event.isFree ? `<span class="free-badge">Free</span>` : ''}
     </div>
-  `).join('');
+    <div class="event-buttons">
+      <button
+        class="event-btn event-btn-primary"
+        data-eventbrite-id="${event.eventbriteId || ''}"
+        data-ticket-url="${event.ticketUrl || ''}"
+      >
+        Get Tickets
+      </button>
+      <button
+        class="event-btn event-btn-secondary"
+        data-learn-more-url="${getEventbriteUrl(event) || ''}"
+      >
+        Learn More
+      </button>
+    </div>
+  </div>
+`).join('');
 
   // "Get Tickets" -> uses same checkout flow as detail view (postMessage modal or fallback)
   eventsList.querySelectorAll('[data-eventbrite-id]').forEach(btn => {
