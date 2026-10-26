@@ -257,20 +257,22 @@ body {
   font-size: 0.875rem;
   font-weight: 600;
   line-height: 1.2;
-}
-
-event-btn:hover{
-  transition: all 0.2s;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .event-btn-primary {
   background-color: #111827;
   color: white;
+  border: 2px solid #111827;
 }
 
 .event-btn-primary:hover {
   background-color: #e7004a;
+  border-color: #e7004a;
   box-shadow: 0 4px 10px -2px rgb(231 0 74 / 0.35);
+  transform: translateY(-1px);
 }
 
 .event-btn-secondary {
@@ -281,6 +283,8 @@ event-btn:hover{
 
 .event-btn-secondary:hover {
   background-color: #fef2f2;
+  box-shadow: 0 4px 10px -2px rgb(231 0 74 / 0.2);
+  transform: translateY(-1px);
 }
 
 .free-badge {
@@ -288,6 +292,7 @@ event-btn:hover{
   background-color: #4caf50;
   color: white;
   padding: 0.3rem 0.8rem;
+  border-radius: 6px;
   font-weight: 600;
   font-size: 0.75rem;
   text-transform: uppercase;
@@ -397,6 +402,7 @@ event-btn:hover{
 .event-btn-large {
   padding: 14px 32px;
   font-size: 16px;
+  border-radius: 8px;
 }
 
 /* Animations */
