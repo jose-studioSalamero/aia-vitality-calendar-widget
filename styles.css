@@ -254,7 +254,6 @@ body {
   flex: 0 0 auto;        /* key fix: stop full-width stretch */
   width: auto;
   padding: 0.6rem 1.5rem;
-  border-radius: 8px;    /* rounded corners instead of sharp bar */
   font-size: 0.875rem;
   font-weight: 600;
   line-height: 1.2;
@@ -285,7 +284,6 @@ body {
   background-color: #4caf50;
   color: white;
   padding: 0.3rem 0.8rem;
-  border-radius: 999px; /* pill shape */
   font-weight: 600;
   font-size: 0.75rem;
   text-transform: uppercase;
