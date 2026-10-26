@@ -263,68 +263,48 @@ function selectDate(dateStr) {
   renderEvents(dayEvents);
 }
 
-// "Learn More" opens the Eventbrite page in a new tab when possible
-function renderEvents(dayEvents) {
-  const eventsContainer = document.getElementById("events-list");
+function renderEvents(events) {
+  const eventsList = document.getElementById('events-list');
 
-  if (dayEvents.length === 0) {
-    eventsContainer.innerHTML =
-      '<p class="no-events">No events on this date</p>';
-    notifyParentOfHeight();
+  if (!events.length) {
+    eventsList.innerHTML = `<div class="no-events">No events scheduled for this date</div>`;
     return;
   }
 
-  eventsContainer.innerHTML = dayEvents
-    .map((event) => {
-      const eventDate = parseLocalDate(event.date);
+  eventsList.innerHTML = events.map(event => `
+    <div class="event-card" data-event-id="${event.id}">
+      <img src="${event.image}" alt="${event.title}" class="event-image" />
+      <h3>${event.title}</h3>
+      <div class="event-time">
+        ${formatEventDate(event.date)} ${event.startTime} - ${event.endTime}
+        ${event.isFree ? `<span class="free-badge">Free</span>` : ''}
+      </div>
+      <div class="event-buttons">
+        <button
+          class="event-btn event-btn-primary"
+          data-url="${event.eventbriteUrl}"
+        >
+          Get Tickets
+        </button>
+        <button
+          class="event-btn event-btn-secondary"
+          data-url="${event.eventbriteUrl}"
+        >
+          Learn More
+        </button>
+      </div>
+    </div>
+  `).join('');
 
-      return `
-        <div class="event-card" data-event-detail="${event.id}">
-          ${event.imageUrl ? `<img src="${event.imageUrl}" alt="${event.title}" class="event-card-image">` : ""}
-
-          <div class="event-card-body">
-            <h3 class="event-card-title">${event.title}</h3>
-
-            <div class="event-card-info">
-              <span class="event-card-date">📅 ${eventDate.toLocaleDateString("en-US", {
-                month: 'short',
-                day: 'numeric'
-              })}</span>
-              <span class="event-card-time">🕐 ${event.startTime} - ${event.endTime}</span>
-              ${event.isFree ? '<span class="free-badge">FREE</span>' : ''}
-            </div>
-
-            <div class="event-card-actions">
-              ${event.eventbriteId
-                ? `<button class="event-btn event-btn-primary" data-eventbrite-id="${event.eventbriteId}" data-ticket-url="${event.ticketUrl || ''}">Get Tickets</button>`
-                : event.ticketUrl
-                ? `<a href="${event.ticketUrl}" class="event-btn event-btn-primary" target="_blank" rel="noopener noreferrer">Get Tickets</a>`
-                : ""}
-            </div>
-          </div>
-        </div>
-      `;
-    })
-    .join("");
-
-  document.querySelectorAll('[data-eventbrite-id]').forEach(button => {
-    button.addEventListener('click', function(e) {
-      e.stopPropagation();
-      const eventbriteId = this.getAttribute('data-eventbrite-id');
-      const ticketUrl = this.getAttribute('data-ticket-url');
-      openEventbriteCheckout(eventbriteId, ticketUrl);
+  // Wire up click handlers after injecting HTML
+  document.querySelectorAll('.event-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const url = e.currentTarget.dataset.url;
+      if (url) {
+        window.open(url, '_blank', 'noopener,noreferrer');
+      }
     });
   });
-
-  document.querySelectorAll('[data-event-detail]').forEach(card => {
-    card.addEventListener('click', function() {
-      const eventId = this.getAttribute('data-event-detail');
-      const event = events.find(e => e.id === eventId);
-      if (event) showEventDetail(event);
-    });
-  });
-
-  notifyParentOfHeight();
 }
 
 function showEventDetail(event) {
