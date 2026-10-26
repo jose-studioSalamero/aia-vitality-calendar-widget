@@ -263,6 +263,14 @@ function selectDate(dateStr) {
   renderEvents(dayEvents);
 }
 
+function formatEventDate(dateStr) {
+  const date = parseLocalDate(dateStr);
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
 function renderEvents(events) {
   const eventsList = document.getElementById('events-list');
 
