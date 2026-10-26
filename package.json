@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "AIA Vitality Hub calendar widget with Google Sheets integration",
   "dependencies": {
+    "dotenv": "^18.0.9",
     "googleapis": "^128.0.0"
   }
 }

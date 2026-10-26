@@ -105,7 +105,7 @@ body {
   justify-content: center;
   cursor: pointer;
   position: relative;
-  background: rgba(255, 255, 255, 0.50);
+  background: white;
   color: #000; /* future dates: black */
   font-family: "Inter Tight", sans-serif;
   font-size: 1rem;
@@ -257,21 +257,7 @@ body {
   border-radius: 0;
   outline: none;
   border: none;
-  .event-btn {
-  padding: 0.75rem 1.5rem;
-  text-decoration: none;
-  font-size: 1rem;
-  font-weight: 600;
-  transition: all 0.2s;
-  display: inline-block;
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  border-radius: 0;
-  outline: none;
-  border: none;
-  pointer-events: cursor;
-}
+  cursor:pointer;
 }
 
 .event-btn-primary {

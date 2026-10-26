@@ -111,7 +111,7 @@ function isEventVisible(event, now = new Date()) {
   return !isEventExpired(event, now) && !isEventSoldOut(event);
 }
 
-// NEW: resolve the best URL to send users to for "Learn More"
+// Resolve the best URL to send users to for "Learn More"
 function getEventbriteUrl(event) {
   if (!event) return null;
   if (event.ticketUrl) return event.ticketUrl;
@@ -138,6 +138,10 @@ function parseLocalDate(dateStr) {
   return new Date(year, month - 1, day);
 }
 
+function getEventsForDate(dateString) {
+  return events.filter(event => event.date === dateString);
+}
+
 // Initialize
 async function init() {
   renderCalendar();
@@ -158,18 +162,17 @@ async function fetchEvents() {
   try {
     console.log('Fetching events from:', API_ENDPOINT);
     const response = await fetch(API_ENDPOINT);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     events = await response.json();
     console.log('Loaded events:', events.length);
-    console.log('Events:', events);
-    
   } catch (error) {
     console.error("Error fetching events:", error);
     events = [];
+    const eventsContainer = document.getElementById("events-list");
+    if (eventsContainer && currentView === 'list') {
+      eventsContainer.innerHTML =
+        '<p class="no-events">Unable to load events right now. Please refresh.</p>';
+    }
   }
 }
 
@@ -182,8 +185,6 @@ function renderCalendar() {
 
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-  const eventDates = getEventDatesForMonth(year, month);
 
   const daysContainer = document.getElementById("calendar-days");
   daysContainer.innerHTML = "";
@@ -205,14 +206,6 @@ function renderCalendar() {
     const dateStr = dayEl.dataset.date;
     const isPast = isPastDate(dateStr, todayStr);
 
-    if (!isPast) {
-      if (eventDates.start.has(dateStr)) {
-        dayEl.classList.add("has-event");
-      } else if (eventDates.range.has(dateStr)) {
-        dayEl.classList.add("has-event-range");
-      }
-    }
-
     if (dateStr === todayStr) {
       dayEl.classList.add("today");
     }
@@ -230,49 +223,6 @@ function renderCalendar() {
 
     daysContainer.appendChild(dayEl);
   }
-}
-
-function getEventDatesForMonth(year, month) {
-  const startDates = new Set();
-  const rangeDates = new Set();
-
-  events
-    .filter((event) => isEventVisible(event))
-    .forEach((event) => {
-      const eventStart = parseLocalDate(event.date);
-      const eventEnd = event.endDate ? parseLocalDate(event.endDate) : eventStart;
-
-      if (
-        (eventStart.getFullYear() === year && eventStart.getMonth() === month) ||
-        (eventEnd.getFullYear() === year && eventEnd.getMonth() === month) ||
-        (eventStart < new Date(year, month, 1) &&
-          eventEnd > new Date(year, month + 1, 0))
-      ) {
-        if (
-          eventStart.getFullYear() === year &&
-          eventStart.getMonth() === month
-        ) {
-          startDates.add(event.date);
-        }
-
-        let currentDate = new Date(
-          Math.max(eventStart, new Date(year, month, 1)),
-        );
-        const endDate = new Date(
-          Math.min(eventEnd, new Date(year, month + 1, 0)),
-        );
-
-        while (currentDate <= endDate) {
-          const dateStr = toDateKey(currentDate);
-          if (dateStr !== event.date) {
-            rangeDates.add(dateStr);
-          }
-          currentDate.setDate(currentDate.getDate() + 1);
-        }
-      }
-    });
-
-  return { start: startDates, range: rangeDates };
 }
 
 function selectDate(dateStr) {
@@ -303,7 +253,7 @@ function selectDate(dateStr) {
   console.log('Selected date:', dateStr);
 
   const dayEvents = events.filter((event) => {
-    const isMatch = event.date === dateStr || 
+    const isMatch = event.date === dateStr ||
                     (event.endDate && dateStr >= event.date && dateStr <= event.endDate);
     return isMatch && isEventVisible(event);
   });
@@ -313,70 +263,77 @@ function selectDate(dateStr) {
   renderEvents(dayEvents);
 }
 
-// UPDATED: "Learn More" now opens the Eventbrite page in a new tab when possible
+// "Learn More" opens the Eventbrite page in a new tab when possible
 function renderEvents(dayEvents) {
   const eventsContainer = document.getElementById("events-list");
 
   if (dayEvents.length === 0) {
     eventsContainer.innerHTML =
       '<p class="no-events">No events on this date</p>';
+    notifyParentOfHeight();
     return;
   }
 
   eventsContainer.innerHTML = dayEvents
-    .map(
-      (event) => {
-        const learnMoreUrl = getEventbriteUrl(event);
-        const learnMoreHtml = learnMoreUrl
-          ? `<a href="${learnMoreUrl}" class="event-btn event-btn-secondary" target="_blank" rel="noopener noreferrer">Learn More</a>`
-          : `<button class="event-btn event-btn-secondary" data-event-detail="${event.id}">Learn More</button>`;
+    .map((event) => {
+      const eventDate = parseLocalDate(event.date);
 
-        return `
-        <div class="event-card" data-event-id="${event.id}">
-            ${event.imageUrl ? `<img src="${event.imageUrl}" alt="${event.title}" class="event-image">` : ""}
-            <h3>${event.title}</h3>
-            <p class="event-time">${event.startTime} - ${event.endTime}</p>
-            <p class="event-description">${event.description}</p>
-            <div class="event-buttons">
-                ${event.eventbriteId ? 
-                  `<button class="event-btn event-btn-primary" data-eventbrite-id="${event.eventbriteId}">Get Tickets</button>` 
-                  : event.ticketUrl ? 
-                  `<a href="${event.ticketUrl}" class="event-btn event-btn-primary" target="_blank" rel="noopener noreferrer">Get Tickets</a>` 
-                  : ""}
-                ${learnMoreHtml}
+      return `
+        <div class="event-card" data-event-detail="${event.id}">
+          ${event.imageUrl ? `<img src="${event.imageUrl}" alt="${event.title}" class="event-card-image">` : ""}
+
+          <div class="event-card-body">
+            <h3 class="event-card-title">${event.title}</h3>
+
+            <div class="event-card-info">
+              <span class="event-card-date">📅 ${eventDate.toLocaleDateString("en-US", {
+                month: 'short',
+                day: 'numeric'
+              })}</span>
+              <span class="event-card-time">🕐 ${event.startTime} - ${event.endTime}</span>
+              ${event.isFree ? '<span class="free-badge">FREE</span>' : ''}
             </div>
+
+            <div class="event-card-actions">
+              ${event.eventbriteId
+                ? `<button class="event-btn event-btn-primary" data-eventbrite-id="${event.eventbriteId}" data-ticket-url="${event.ticketUrl || ''}">Get Tickets</button>`
+                : event.ticketUrl
+                ? `<a href="${event.ticketUrl}" class="event-btn event-btn-primary" target="_blank" rel="noopener noreferrer">Get Tickets</a>`
+                : ""}
+            </div>
+          </div>
         </div>
-    `;
-      },
-    )
+      `;
+    })
     .join("");
 
   document.querySelectorAll('[data-eventbrite-id]').forEach(button => {
-    button.addEventListener('click', function() {
+    button.addEventListener('click', function(e) {
+      e.stopPropagation();
       const eventbriteId = this.getAttribute('data-eventbrite-id');
-      openEventbriteCheckout(eventbriteId);
+      const ticketUrl = this.getAttribute('data-ticket-url');
+      openEventbriteCheckout(eventbriteId, ticketUrl);
     });
   });
 
-  // Fallback only fires for events with no ticketUrl/eventbriteId at all
-  document.querySelectorAll('[data-event-detail]').forEach(button => {
-    button.addEventListener('click', function() {
+  document.querySelectorAll('[data-event-detail]').forEach(card => {
+    card.addEventListener('click', function() {
       const eventId = this.getAttribute('data-event-detail');
       const event = events.find(e => e.id === eventId);
-      if (event) {
-        showEventDetail(event);
-      }
+      if (event) showEventDetail(event);
     });
   });
+
+  notifyParentOfHeight();
 }
 
 function showEventDetail(event) {
   currentView = 'detail';
   selectedEvent = event;
-  
+
   const eventsContainer = document.getElementById("events-list");
   const eventDate = parseLocalDate(event.date);
-  
+
   eventsContainer.innerHTML = `
     <div class="event-detail">
       <button class="back-button" id="back-to-list">
@@ -385,40 +342,40 @@ function showEventDetail(event) {
         </svg>
         Back to Events
       </button>
-      
+
       ${event.imageUrl ? `<img src="${event.imageUrl}" alt="${event.title}" class="event-detail-image">` : ""}
-      
+
       <h2 class="event-detail-title">${event.title}</h2>
-      
+
       <div class="event-detail-info">
         <div class="info-item">
           <strong>📅 Date:</strong>
-          <span>${eventDate.toLocaleDateString("en-US", { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
+          <span>${eventDate.toLocaleDateString("en-US", {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
           })}</span>
         </div>
-        
+
         <div class="info-item">
           <strong>🕐 Time:</strong>
           <span>${event.startTime} - ${event.endTime}</span>
         </div>
-        
+
         ${event.isFree ? '<div class="info-item"><span class="free-badge-large">FREE EVENT</span></div>' : ''}
       </div>
-      
+
       <div class="event-detail-description">
         <h3>About This Event</h3>
         <p>${event.description}</p>
       </div>
-      
+
       <div class="event-detail-actions">
-        ${event.eventbriteId ? 
-          `<button class="event-btn event-btn-primary event-btn-large" data-eventbrite-id="${event.eventbriteId}">Get Tickets</button>` 
-          : event.ticketUrl ? 
-          `<a href="${event.ticketUrl}" class="event-btn event-btn-primary event-btn-large" target="_blank" rel="noopener noreferrer">Get Tickets</a>` 
+        ${event.eventbriteId
+          ? `<button class="event-btn event-btn-primary" data-eventbrite-id="${event.eventbriteId}" data-ticket-url="${event.ticketUrl || ''}">Get Tickets</button>`
+          : event.ticketUrl
+          ? `<a href="${event.ticketUrl}" class="event-btn event-btn-primary" target="_blank" rel="noopener noreferrer">Get Tickets</a>`
           : ""}
         ${event.ticketUrl ? `<a href="${event.ticketUrl}" class="event-btn event-btn-secondary" target="_blank" rel="noopener noreferrer">View on Eventbrite</a>` : ''}
       </div>
@@ -433,7 +390,8 @@ function showEventDetail(event) {
   if (ticketBtn) {
     ticketBtn.addEventListener('click', function() {
       const eventbriteId = this.getAttribute('data-eventbrite-id');
-      openEventbriteCheckout(eventbriteId);
+      const ticketUrl = this.getAttribute('data-ticket-url');
+      openEventbriteCheckout(eventbriteId, ticketUrl);
     });
   }
 
@@ -442,14 +400,16 @@ function showEventDetail(event) {
   }, 100);
 }
 
-function openEventbriteCheckout(eventbriteId) {
-  console.log('Sending message to parent window for Eventbrite ID:', eventbriteId);
-  
+function openEventbriteCheckout(eventbriteId, ticketUrl) {
+  console.log('Opening checkout for:', eventbriteId);
+
   if (window.parent && window.parent !== window) {
     window.parent.postMessage({
       type: 'OPEN_EVENTBRITE_MODAL',
       eventbriteId: eventbriteId
     }, '*');
+  } else if (ticketUrl) {
+    window.open(ticketUrl, '_blank');
   } else {
     window.open(`https://www.eventbrite.com/e/${eventbriteId}`, '_blank');
   }
@@ -458,7 +418,7 @@ function openEventbriteCheckout(eventbriteId) {
 function setupMessageListener() {
   window.addEventListener('message', function(event) {
     console.log('Received message:', event.data);
-    
+
     if (event.data.type === 'OPEN_EVENT' && event.data.eventId) {
       openEventById(event.data.eventId);
     }
@@ -466,41 +426,31 @@ function setupMessageListener() {
 }
 
 function openEventById(eventId) {
-  console.log('Opening event by ID:', eventId);
-  
   const event = events.find(e => e.id === eventId || e.eventbriteId === eventId);
-  
-  if (!event) {
-    console.warn('Event not found:', eventId);
-    return;
-  }
+  if (!event) return console.warn('Event not found:', eventId);
+  if (!isEventVisible(event)) return console.warn('Event expired/sold out:', eventId);
 
-  if (!isEventVisible(event)) {
-    console.warn('Event is expired or sold out, ignoring open request:', eventId);
-    return;
-  }
-  
-  console.log('Found event:', event);
-  
+  currentDate = parseLocalDate(event.date);
+  renderCalendar();
+
   selectDate(event.date);
-  
+
   setTimeout(() => {
     showEventDetail(event);
-    
-    const eventDetail = document.querySelector('.event-detail');
-    if (eventDetail) {
-      eventDetail.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    document.querySelector('.event-detail')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, 100);
 }
 
 function notifyParentOfHeight() {
   if (window.parent && window.parent !== window) {
-    const height = document.body.scrollHeight;
-    window.parent.postMessage({
-      type: 'RESIZE',
-      height: height
-    }, '*');
+    const send = () => {
+      window.parent.postMessage({
+        type: 'RESIZE',
+        height: document.body.scrollHeight
+      }, '*');
+    };
+    send();
+    setTimeout(send, 150); // catch late image loads
   }
 }
 
@@ -548,29 +498,5 @@ function setupEventListeners() {
     renderCalendar();
   });
 }
-
-document.querySelectorAll('.calendar-day').forEach(day => {
-  day.addEventListener('click', (e) => {
-    e.preventDefault();
-    const eventId = day.getAttribute('data-event');
-    if (eventId) {
-      showEventDetail(eventId);
-      window.parent.postMessage({ 
-        type: 'navigate', 
-        eventId: eventId 
-      }, '*');
-    }
-  });
-});
-
-document.querySelectorAll('a[href^="#"]').forEach(link => {
-  link.addEventListener('click', (e) => {
-    e.preventDefault();
-    const eventId = link.getAttribute('data-event');
-    if (eventId) {
-      showEventDetail(eventId);
-    }
-  });
-});
 
 init();

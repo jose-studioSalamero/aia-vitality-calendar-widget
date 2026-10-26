@@ -1,8 +1,18 @@
+console.log('ENV CHECK:', !!process.env.GOOGLE_SERVICE_KEY);
 const { google } = require('googleapis');
 
 export default async function handler(req, res) {
   try {
-    const credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY);
+    let rawKey = process.env.GOOGLE_SERVICE_KEY;
+
+// Repair cases where the private_key field has real line breaks
+// instead of the escaped \n sequence JSON requires
+rawKey = rawKey.replace(
+  /"private_key":\s*"([\s\S]*?)"/,
+  (match, keyContent) => `"private_key": "${keyContent.replace(/\r?\n/g, '\\n')}"`
+);
+
+const credentials = JSON.parse(rawKey);
     
     const auth = new google.auth.GoogleAuth({
       credentials: credentials,
