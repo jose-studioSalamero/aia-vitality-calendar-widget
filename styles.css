@@ -259,6 +259,10 @@ body {
   line-height: 1.2;
 }
 
+event-btn:hover{
+  transition: all 0.2s;
+}
+
 .event-btn-primary {
   background-color: #111827;
   color: white;
