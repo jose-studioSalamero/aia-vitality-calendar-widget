@@ -282,13 +282,14 @@ function renderEvents(events) {
       <div class="event-buttons">
         <button
           class="event-btn event-btn-primary"
-          data-url="${event.eventbriteUrl}"
+          data-eventbrite-id="${event.eventbriteId || ''}"
+          data-ticket-url="${event.ticketUrl || ''}"
         >
           Get Tickets
         </button>
         <button
           class="event-btn event-btn-secondary"
-          data-url="${event.eventbriteUrl}"
+          data-learn-more-url="${getEventbriteUrl(event) || ''}"
         >
           Learn More
         </button>
@@ -296,12 +297,23 @@ function renderEvents(events) {
     </div>
   `).join('');
 
-  // Wire up click handlers after injecting HTML
-  document.querySelectorAll('.event-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const url = e.currentTarget.dataset.url;
+  // "Get Tickets" -> uses same checkout flow as detail view (postMessage modal or fallback)
+  eventsList.querySelectorAll('[data-eventbrite-id]').forEach(btn => {
+    btn.addEventListener('click', function () {
+      const eventbriteId = this.getAttribute('data-eventbrite-id');
+      const ticketUrl = this.getAttribute('data-ticket-url');
+      openEventbriteCheckout(eventbriteId, ticketUrl);
+    });
+  });
+
+  // "Learn More" -> always opens Eventbrite URL in a new tab
+  eventsList.querySelectorAll('[data-learn-more-url]').forEach(btn => {
+    btn.addEventListener('click', function () {
+      const url = this.getAttribute('data-learn-more-url');
       if (url) {
         window.open(url, '_blank', 'noopener,noreferrer');
+      } else {
+        console.warn('No Eventbrite URL available for this event');
       }
     });
   });
