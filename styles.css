@@ -259,6 +259,13 @@ body {
   line-height: 1.2;
   cursor: pointer;
   transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.event-btn:hover,
+.event-btn:focus,
+.event-btn:visited {
+  text-decoration: none;
 }
 
 .event-btn-primary {
