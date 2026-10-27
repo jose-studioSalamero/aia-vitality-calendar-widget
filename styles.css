@@ -251,7 +251,7 @@ body {
 
 
 .event-btn {
-  flex: 0 0 auto;        /* key fix: stop full-width stretch */
+  flex: 0 0 auto;
   width: auto;
   padding: 0.6rem 1.5rem;
   font-size: 0.875rem;
@@ -468,7 +468,19 @@ body {
     flex-direction: column;
   }
 
-  .event-btn {
+    /* Only force full width for the detail page buttons */
+  .event-detail-actions .event-btn {
+    width: 100%;
+    text-align: center;
+  }
+
+  /* Card buttons: stack vertically so they never overflow */
+  .event-buttons {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .event-buttons .event-btn {
     width: 100%;
     text-align: center;
   }
